@@ -80,6 +80,20 @@ the agents:
 4. Challenger Agent : It questions the findings
 5. Coordinator Agent : It identifies the strongest investigation and allocates further attention to it. This agent makes the decision.
 
-
+The website layout is :
+frontend/
+│
+├── src/
+│   ├── components/
+│   ├── pages/
+│   ├── layouts/
+│   ├── services/
+│   ├── assets/
+│   ├── App.jsx
+│   ├── main.jsx
+│   └── index.css
+│
+└── package.json
+ 
 
 

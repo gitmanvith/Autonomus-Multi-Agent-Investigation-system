@@ -6,7 +6,6 @@
   padding: 0;
   box-sizing: border-box;
 }
-
 body {
   font-family: 'DM Sans', sans-serif;
   background: #f6f8fb;
@@ -21,4 +20,44 @@ button {
 a {
   text-decoration: none;
   color: inherit;
+}
+
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  transition: color 0.2s ease;
+}
+
+button {
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #527cae;
+  outline-offset: 3px;
 }
