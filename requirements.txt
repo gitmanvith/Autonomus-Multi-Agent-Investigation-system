@@ -1,0 +1,196 @@
+
+# ==================================================
+# MULTI-AGENT AUTONOMOUS RESEARCH SYSTEM
+# Python 3.10+
+# ==================================================
+
+# 1. LANGCHAIN CORE
+langchain>=1.0,<2.0
+langchain-core>=1.0,<2.0
+langchain-text-splitters>=1.0
+langchain-openai>=1.0
+
+# 2. MULTI-AGENT ORCHESTRATION
+langgraph>=1.0,<2.0
+langgraph-checkpoint-sqlite
+
+# 3. OPENAI API
+openai>=2.0
+
+# 4. TAVILY WEB SEARCH
+langchain-tavily
+
+# 5. BEAUTIFULSOUP WEB SCRAPING
+beautifulsoup4>=4.12
+lxml>=5.0
+html5lib>=1.1
+
+# 6. CHROME BROWSER AUTOMATION
+playwright>=1.50
+
+# 7. HTTP CLIENTS
+requests>=2.32
+httpx>=0.27
+aiohttp>=3.10
+
+# 8. LLM PIPELINE AND TOKENIZATION
+tiktoken>=0.7
+
+# 9. DOCUMENT PROCESSING
+pypdf>=5.0
+python-docx>=1.1
+
+# 10. VECTOR DATABASE / RAG
+langchain-chroma
+chromadb
+
+# 11. BACKEND API
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9
+
+# 12. ENVIRONMENT AND CONFIGURATION
+python-dotenv>=1.0
+pydantic>=2.8
+pydantic-settings>=2.0
+
+# 13. ASYNC AND RETRY HANDLING
+tenacity>=9.0
+
+# 14. LOGGING AND MONITORING
+structlog>=24.0
+langsmith>=0.3
+
+# 15. BACKEND TESTING
+pytest>=8.0
+pytest-asyncio>=0.24
+pytest-cov>=5.0
+```
+ 
+## 2. React and Jest dependencies
+
+These must go into your frontend's `package.json`, not Python's requirements file.
+
+```bash
+npm install react react-dom axios
+npm install react-router-dom lucide-react recharts
+npm install socket.io-client
+
+npm install -D jest
+npm install -D jest-environment-jsdom
+npm install -D @testing-library/react
+npm install -D @testing-library/jest-dom
+npm install -D @testing-library/user-event
+```
+
+## 3. Installation commands
+
+Run these commands on Windows:
+
+```bash
+# Create virtual environment
+python -m venv venv
+
+# Activate environment
+venv\Scripts\activate
+
+# Upgrade pip
+python -m pip install --upgrade pip
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Install Chromium for Playwright
+playwright install chromium
+```
+
+## 4. Environment variables
+
+Create a `.env` file:
+
+```env
+OPENAI_API_KEY=your_openai_api_key
+TAVILY_API_KEY=your_tavily_api_key
+
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=your_langsmith_api_key
+LANGSMITH_PROJECT=Multi-Agent-Research
+```
+
+Keep `.env` out of Git using `.gitignore`.
+
+## 5. Recommended project structure
+
+```text
+multi-agent-research/
+│
+├── backend/
+│   ├── agents/
+│   │   ├── tavily_agent.py
+│   │   ├── beautifulsoup_agent.py
+│   │   ├── researcher_agent.py
+│   │   ├── analyst_agent.py
+│   │   └── coordinator_agent.py
+│   │
+│   ├── tools/
+│   │   ├── tavily_search.py
+│   │   ├── web_scraper.py
+│   │   └── chrome_browser.py
+│   │
+│   ├── chains/
+│   │   ├── research_chain.py
+│   │   ├── analysis_chain.py
+│   │   └── summarization_chain.py
+│   │
+│   ├── orchestration/
+│   │   ├── react_agent.py
+│   │   └── multi_agent_graph.py
+│   │
+│   ├── pipelines/
+│   │   └── llm_pipeline.py
+│   │
+│   ├── api/
+│   │   └── main.py
+│   │
+│   ├── tests/
+│   ├── requirements.txt
+│   └── .env
+│
+├── frontend/
+│   ├── src/
+│   ├── public/
+│   ├── package.json
+│   └── jest.config.js
+│
+├── README.md
+└── .gitignore
+```
+
+## 6. Important architectural decisions
+
+| Component | Recommended technology |
+|---|---|
+| AI models | OpenAI API |
+| Web research | Tavily |
+| Web extraction | BeautifulSoup |
+| Agent framework | LangChain |
+| Multi-agent workflow | LangGraph |
+| Reasoning agent | ReAct |
+| LLM chains | LangChain LCEL |
+| Browser automation | Playwright + Chromium |
+| Vector database | ChromaDB |
+| Backend | FastAPI |
+| Frontend | React |
+| Frontend testing | Jest |
+| Backend testing | Pytest |
+
+**A few important notes:**
+
+- ChromaDB is useful if you want semantic search over previously collected research. It is optional for a basic research workflow.
+- LangGraph provides stateful multi-agent orchestration and ReAct-style agent capabilities. <Cite refs={["turn584156search2","turn584156search7"]}/>
+- LangSmith helps trace and debug agent executions.
+- Jest tests the JavaScript frontend; Pytest tests your Python backend.
+
+**My recommendation:** Start with Python 3.11 or 3.12, install the dependencies, and then build the agents individually before connecting them through LangGraph. Once the project works, generate a locked dependency file with tested versions to make installations reproducible.
+
+This gives you a solid foundation for a full-fledged multi-agent research platform.
