@@ -3,19 +3,26 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const ALLOWED_EXTENSIONS = [
-  "pdf", "docx", "doc", "xlsx", "xls",
-  "csv", "txt", "json", "log", "zip"
+  "pdf", "doc", "docx",
+  "xls", "xlsx", "csv",
+  "ppt", "pptx",
+  "txt", "json", "log", "zip",
+  "py", "js", "jsx", "ts", "tsx",
+  "java", "c", "cpp", "h", "cs",
+  "go", "rs", "sql", "sh", "ipynb",
+  "html", "css", "md", "xml", "yaml", "yml"
 ];
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB per file
-const MAX_TOTAL_SIZE = 100 * 1024 * 1024; // 100 MB total
+const ACCEPTED_FILES = ALLOWED_EXTENSIONS.map(ext => `.${ext}`).join(",");
+
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
+const MAX_TOTAL_SIZE = 100 * 1024 * 1024;
 const MAX_FILES = 100;
 
 function formatSize(bytes) {
   if (bytes < 1024 * 1024) {
     return `${(bytes / 1024).toFixed(1)} KB`;
   }
-
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
@@ -33,59 +40,53 @@ function Explore() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   function addFiles(fileList) {
     const incoming = Array.from(fileList || []);
-
     if (!incoming.length) return;
 
-    const validFiles = [];
     const errors = [];
+    const validFiles = [];
 
-    incoming.forEach((file) => {
+    incoming.forEach(file => {
       const extension = file.name.split(".").pop().toLowerCase();
 
       if (!ALLOWED_EXTENSIONS.includes(extension)) {
         errors.push(`${file.name}: unsupported file type.`);
-        return;
+      } else if (file.size > MAX_FILE_SIZE) {
+        errors.push(`${file.name}: exceeds 20 MB.`);
+      } else {
+        validFiles.push(file);
       }
-
-      if (file.size > MAX_FILE_SIZE) {
-        errors.push(`${file.name}: exceeds the 20 MB limit.`);
-        return;
-      }
-
-      validFiles.push(file);
     });
 
-    setSelectedFiles((previous) => {
+    setSelectedFiles(previous => {
       const combined = [...previous];
 
-      validFiles.forEach((file) => {
+      validFiles.forEach(file => {
         const path = file.webkitRelativePath || file.name;
 
-        const duplicate = combined.some(
-          (existing) =>
-            (existing.webkitRelativePath || existing.name) === path &&
-            existing.size === file.size &&
-            existing.lastModified === file.lastModified
+        const duplicate = combined.some(existing =>
+          (existing.webkitRelativePath || existing.name) === path &&
+          existing.size === file.size &&
+          existing.lastModified === file.lastModified
         );
 
         if (!duplicate) combined.push(file);
       });
 
       if (combined.length > MAX_FILES) {
-        errors.push(`You can select a maximum of ${MAX_FILES} files.`);
+        errors.push(`Maximum ${MAX_FILES} files allowed.`);
         return combined.slice(0, MAX_FILES);
       }
 
       const totalSize = combined.reduce(
-        (sum, file) => sum + file.size,
-        0
+        (sum, file) => sum + file.size, 0
       );
 
       if (totalSize > MAX_TOTAL_SIZE) {
-        errors.push("Total selected file size cannot exceed 100 MB.");
+        errors.push("Total file size cannot exceed 100 MB.");
         return previous;
       }
 
@@ -93,10 +94,11 @@ function Explore() {
     });
 
     setError(errors.join(" "));
+    setUploadModalOpen(false);
   }
 
   function removeFile(index) {
-    setSelectedFiles((previous) =>
+    setSelectedFiles(previous =>
       previous.filter((_, i) => i !== index)
     );
   }
@@ -104,7 +106,6 @@ function Explore() {
   function handleDrop(event) {
     event.preventDefault();
     setDragging(false);
-
     addFiles(event.dataTransfer.files);
   }
 
@@ -116,243 +117,217 @@ function Explore() {
       return;
     }
 
-    const existing = JSON.parse(
-      localStorage.getItem("investigations") || "[]"
-    );
+    try {
+      const existing = JSON.parse(
+        localStorage.getItem("investigations") || "[]"
+      );
 
-    const investigation = {
-      id: crypto.randomUUID(),
-      topic: topic.trim(),
-      description: description.trim(),
-      depth,
-      sources,
-      status: "Created",
-      createdAt: new Date().toISOString(),
+      const investigation = {
+        id: crypto.randomUUID(),
+        topic: topic.trim(),
+        description: description.trim(),
+        depth,
+        sources,
+        status: "Created",
+        createdAt: new Date().toISOString(),
+        documents: selectedFiles.map(file => ({
+          name: file.name,
+          path: file.webkitRelativePath || file.name,
+          size: file.size,
+          type: file.type || "unknown",
+          uploadStatus: "Pending backend upload"
+        }))
+      };
 
-      // Metadata only. Actual file upload requires the backend.
-      documents: selectedFiles.map((file) => ({
-        name: file.name,
-        path: file.webkitRelativePath || file.name,
-        size: file.size,
-        type: file.type || "unknown",
-        uploadStatus: "Pending backend upload"
-      }))
-    };
+      localStorage.setItem(
+        "investigations",
+        JSON.stringify([investigation, ...existing])
+      );
 
-    localStorage.setItem(
-      "investigations",
-      JSON.stringify([investigation, ...existing])
-    );
-
-    navigate("/app/workspace");
+      navigate("/app/workspace");
+    } catch {
+      setError("Could not save the investigation. Please try again.");
+    }
   }
 
   const totalSize = selectedFiles.reduce(
-    (sum, file) => sum + file.size,
-    0
+    (sum, file) => sum + file.size, 0
   );
 
   return (
-    <section>
-      <div className="dashboard-heading">
+    <section className="explore-page">
+
+      <div className="dashboard-heading explore-heading">
         <span className="hero-label">INVESTIGATION CENTER</span>
-        <h1>Start an investigation</h1>
+        <h1>Investigation workspace</h1>
         <p>
-          Investigate information from documents, datasets,
-          and external sources using your multi-agent system.
+          Define your research question, provide source material,
+          and prepare your multi-agent investigation.
         </p>
       </div>
 
-      <div className="panel explore-panel">
-        <form onSubmit={handleSubmit} className="investigation-form">
+      <form onSubmit={handleSubmit} className="explore-workspace">
 
-          <label htmlFor="topic">Investigation topic</label>
-          <input
-            id="topic"
-            type="text"
-            placeholder="e.g. Identify suspicious financial transactions"
-            value={topic}
-            onChange={(event) => {
-              setTopic(event.target.value);
-              setError("");
-            }}
-          />
+        {/* LEFT: INVESTIGATION SETUP */}
+        <div className="explore-main-column">
 
-          <label htmlFor="description">
-            Research question / instructions
-          </label>
-          <textarea
-            id="description"
-            rows="5"
-            placeholder="Describe what you want the agents to investigate..."
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-          />
-
-          <div className="form-row">
-            <div>
-              <label htmlFor="depth">Investigation depth</label>
-              <select
-                id="depth"
-                value={depth}
-                onChange={(event) => setDepth(event.target.value)}
-              >
-                <option>Quick</option>
-                <option>Standard</option>
-                <option>Deep</option>
-              </select>
+          <div className="explore-card">
+            <div className="explore-card-heading">
+              <div>
+                <span className="section-eyebrow">01 / DEFINE</span>
+                <h2>Investigation setup</h2>
+                <p>Tell the agents what they need to discover.</p>
+              </div>
+              <span className="step-number">01</span>
             </div>
 
-            <div>
-              <label htmlFor="sources">Information sources</label>
-              <select
-                id="sources"
-                value={sources}
-                onChange={(event) => setSources(event.target.value)}
-              >
-                <option>All available sources</option>
-                <option>Web sources</option>
-                <option>Uploaded documents</option>
-                <option>Custom sources</option>
-              </select>
+            <label htmlFor="topic">Investigation topic</label>
+            <input
+              id="topic"
+              type="text"
+              placeholder="e.g. Discover hidden relationships in financial transactions"
+              value={topic}
+              onChange={e => {
+                setTopic(e.target.value);
+                setError("");
+              }}
+            />
+
+            <label htmlFor="description">
+              Research question and instructions
+            </label>
+            <textarea
+              id="description"
+              rows="5"
+              placeholder="Describe the problem, what you already know, and what you want the agents to verify..."
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+            />
+
+            <div className="form-row explore-form-row">
+              <div>
+                <label htmlFor="depth">Investigation depth</label>
+                <select
+                  id="depth"
+                  value={depth}
+                  onChange={e => setDepth(e.target.value)}
+                >
+                  <option>Quick</option>
+                  <option>Standard</option>
+                  <option>Deep</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="sources">Information sources</label>
+                <select
+                  id="sources"
+                  value={sources}
+                  onChange={e => setSources(e.target.value)}
+                >
+                  <option>All available sources</option>
+                  <option>Web sources</option>
+                  <option>Uploaded documents</option>
+                  <option>Custom sources</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          <div className="upload-section">
-            <div className="upload-heading">
+          {/* DOCUMENTS AND CODE */}
+          <div className="explore-card">
+            <div className="explore-card-heading">
               <div>
-                <h2>Investigation documents</h2>
+                <span className="section-eyebrow">02 / SOURCE MATERIAL</span>
+                <h2>Documents and code</h2>
                 <p>
-                  Add individual files or an entire folder
-                  for the agents to investigate.
+                  Add reports, datasets, presentations, source code,
+                  or an entire project folder.
                 </p>
               </div>
-
-              <span className="upload-count">
-                {selectedFiles.length} files
-              </span>
+              <span className="step-number">02</span>
             </div>
 
             <div
-              className={`upload-dropzone ${dragging ? "dragging" : ""}`}
-              onDragOver={(event) => {
-                event.preventDefault();
+              className={`explore-upload-zone ${dragging ? "is-dragging" : ""}`}
+              onDragOver={e => {
+                e.preventDefault();
                 setDragging(true);
               }}
-              onDragLeave={() => setDragging(false)}
+              onDragLeave={e => {
+                if (!e.currentTarget.contains(e.relatedTarget)) {
+                  setDragging(false);
+                }
+              }}
               onDrop={handleDrop}
             >
-              <div className="upload-icon">↑</div>
+              <div className="upload-symbol">↑</div>
+              <h3>Drop your files here</h3>
+              <p>Drag files or folders into this area to add them.</p>
 
-              <h3>Drag and drop your documents here</h3>
-              <p>Or select files and folders from your device.</p>
-
-              <div className="upload-actions">
-                <button
-                  type="button"
-                  className="secondary-action"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  Select files
-                </button>
-
-                <button
-                  type="button"
-                  className="secondary-action"
-                  onClick={() => folderInputRef.current?.click()}
-                >
-                  Select entire folder
-                </button>
-              </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                hidden
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.json,.log,.zip"
-                onChange={(event) => {
-                  addFiles(event.target.files);
-                  event.target.value = "";
-                }}
-              />
-
-              <input
-                ref={folderInputRef}
-                type="file"
-                multiple
-                hidden
-                webkitdirectory=""
-                onChange={(event) => {
-                  addFiles(event.target.files);
-                  event.target.value = "";
-                }}
-              />
-               
-
-             <div
-  className="dropzone"
-  onDragOver={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }}
-  onDrop={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    addFiles(e.dataTransfer.files);
-  }}
->
-  <input
-    type="file"
-    id="file-upload"
-    multiple
-    onChange={(e) => {
-      addFiles(e.target.files);
-      e.target.value = "";
-    }}
-    hidden
-  />
-
-  <div className="dropzone-content">
-    <span className="upload-icon">📁</span>
-    <h3>Drag and drop your files here</h3>
-    <p>Or click below to browse files from your computer</p>
-
-    <label htmlFor="file-upload" className="upload-button">
-      Browse Files
-    </label>
-  </div>
-</div>
-
-
+              <button
+                type="button"
+                className="secondary-action"
+                onClick={() => setUploadModalOpen(true)}
+              >
+                + Add documents or code
+              </button>
 
               <small>
-                PDF, DOCX, XLSX, CSV, TXT, JSON, LOG, ZIP
+                PDF, DOCX, XLSX, PPTX, CSV, JSON, ZIP, PY, JS, JSX,
+                TS, JAVA, SQL and more
               </small>
               <small>
-                Maximum 20 MB per file · 100 MB total · 100 files
+                20 MB per file · 100 MB total · Up to 100 files
               </small>
             </div>
 
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              hidden
+              accept={ACCEPTED_FILES}
+              onChange={e => {
+                addFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+
+            <input
+              ref={folderInputRef}
+              type="file"
+              multiple
+              hidden
+              webkitdirectory=""
+              onChange={e => {
+                addFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+
             {selectedFiles.length > 0 && (
-              <div className="selected-files">
+              <div className="explore-file-list">
                 <div className="selected-files-heading">
-                  <h3>Selected documents</h3>
-                  <span>{formatSize(totalSize)} total</span>
+                  <h3>Attached source material</h3>
+                  <span>
+                    {selectedFiles.length} files · {formatSize(totalSize)}
+                  </span>
                 </div>
 
                 {selectedFiles.map((file, index) => (
-                  <div className="selected-file" key={`${file.name}-${index}`}>
-                    <div className="file-icon">▤</div>
-
-                    <div className="file-information">
+                  <div
+                    className="explore-file-item"
+                    key={`${file.name}-${index}`}
+                  >
+                    <div className="explore-file-icon">▤</div>
+                    <div className="explore-file-info">
                       <strong>{file.name}</strong>
                       <small>
                         {file.webkitRelativePath || file.name}
                       </small>
                       <small>{formatSize(file.size)}</small>
                     </div>
-
                     <button
                       type="button"
                       className="remove-file"
@@ -369,29 +344,185 @@ function Explore() {
                   className="text-button delete-button"
                   onClick={() => setSelectedFiles([])}
                 >
-                  Remove all documents
+                  Remove all files
                 </button>
               </div>
             )}
           </div>
 
-          {error && <p className="error-message">{error}</p>}
+          {error && (
+            <p className="error-message" role="alert">{error}</p>
+          )}
 
-          <button type="submit" className="primary-button">
-            Create Investigation →
-          </button>
-        </form>
-      </div>
+          <div className="explore-submit-row">
+            <div>
+              <strong>Ready to investigate?</strong>
+              <p>Your investigation settings will be saved.</p>
+            </div>
+            <button type="submit" className="primary-button">
+              Create investigation →
+            </button>
+          </div>
+        </div>
 
-      <div className="notice-panel">
-        <strong>Document upload preview</strong>
-        <p>
-          Files are currently selected in your browser only.
-          They are not yet uploaded to secure storage or processed
-          by the AI agents. Backend integration is the next step.
-          Use synthetic or anonymised data during development.
-        </p>
-      </div>
+        {/* RIGHT: AGENT ACTIVITY / OUTPUT PREVIEW */}
+        <aside className="explore-side-column">
+
+          <div className="explore-card agent-preview-card">
+            <div className="explore-card-heading">
+              <div>
+                <span className="section-eyebrow">03 / AGENT SYSTEM</span>
+                <h2>Investigation pipeline</h2>
+                <p>Your investigation team at a glance.</p>
+              </div>
+              <span className="agent-status-dot" />
+            </div>
+
+            <div className="agent-preview-list">
+              <div className="agent-preview-item">
+                <span className="agent-avatar">EX</span>
+                <div>
+                  <strong>Explorer</strong>
+                  <small>Finds patterns and unusual signals</small>
+                </div>
+                <span className="agent-idle">Ready</span>
+              </div>
+
+              <div className="agent-preview-item">
+                <span className="agent-avatar">HY</span>
+                <div>
+                  <strong>Hypothesis</strong>
+                  <small>Develops possible explanations</small>
+                </div>
+                <span className="agent-idle">Ready</span>
+              </div>
+
+              <div className="agent-preview-item">
+                <span className="agent-avatar">IN</span>
+                <div>
+                  <strong>Investigator</strong>
+                  <small>Collects and checks evidence</small>
+                </div>
+                <span className="agent-idle">Ready</span>
+              </div>
+
+              <div className="agent-preview-item">
+                <span className="agent-avatar">CH</span>
+                <div>
+                  <strong>Challenger</strong>
+                  <small>Attempts to disprove findings</small>
+                </div>
+                <span className="agent-idle">Ready</span>
+              </div>
+
+              <div className="agent-preview-item">
+                <span className="agent-avatar">CO</span>
+                <div>
+                  <strong>Coordinator</strong>
+                  <small>Combines evidence and conclusions</small>
+                </div>
+                <span className="agent-idle">Ready</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="explore-card output-preview-card">
+            <span className="section-eyebrow">LIVE INVESTIGATION OUTPUT</span>
+            <h2>Research findings</h2>
+
+            <div className="output-empty-state">
+              <div className="output-empty-icon">⌕</div>
+              <strong>No investigation started</strong>
+              <p>
+                Your findings, evidence trail, hypotheses,
+                and agent activity will appear in this area
+                when the investigation backend is connected.
+              </p>
+            </div>
+          </div>
+
+          <div className="explore-info-card">
+            <strong>Source handling</strong>
+            <p>
+              Files are currently selected in your browser and their
+              metadata is saved with the investigation. They are not
+              uploaded or processed by the agents yet.
+            </p>
+          </div>
+
+        </aside>
+      </form>
+
+      {/* UPLOAD MODAL */}
+      {uploadModalOpen && (
+        <div
+          className="explore-modal-backdrop"
+          onMouseDown={e => {
+            if (e.target === e.currentTarget) {
+              setUploadModalOpen(false);
+            }
+          }}
+        >
+          <div
+            className="explore-upload-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="upload-modal-title"
+          >
+            <div className="modal-heading">
+              <div>
+                <span className="section-eyebrow">SOURCE MATERIAL</span>
+                <h2 id="upload-modal-title">Add files to investigation</h2>
+                <p>Choose individual files or upload a complete folder.</p>
+              </div>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setUploadModalOpen(false)}
+                aria-label="Close upload dialog"
+              >
+                ×
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="upload-choice"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <span className="upload-choice-icon">▤</span>
+              <span>
+                <strong>Choose files</strong>
+                <small>Select multiple documents, datasets, or code files.</small>
+              </span>
+              <span className="upload-choice-arrow">→</span>
+            </button>
+
+            <button
+              type="button"
+              className="upload-choice"
+              onClick={() => folderInputRef.current?.click()}
+            >
+              <span className="upload-choice-icon">▣</span>
+              <span>
+                <strong>Choose folder</strong>
+                <small>Add a project folder and its supported files.</small>
+              </span>
+              <span className="upload-choice-arrow">→</span>
+            </button>
+
+            <div className="modal-upload-note">
+              <strong>Supported formats</strong>
+              <p>
+                Documents, spreadsheets, presentations, archives,
+                datasets, and common programming files.
+              </p>
+              <small>20 MB per file · 100 MB total</small>
+            </div>
+          </div>
+        </div>
+      )}
+
     </section>
   );
 }

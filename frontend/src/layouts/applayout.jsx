@@ -28,6 +28,11 @@ function AppLayout() {
           <NavLink to="/app/reports" className="sidebar-link">
             <span>▤</span> Reports
           </NavLink>
+
+          <NavLink to="/app/agent-network" className="sidebar-link">
+  <span>◉</span> Agent Network
+</NavLink>
+
         </div>
 
         <div className="sidebar-section">

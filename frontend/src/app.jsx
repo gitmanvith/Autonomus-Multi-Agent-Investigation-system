@@ -18,6 +18,9 @@ import Discoveries from "./pages/app/discoveries";
 import Reports from "./pages/app/reports";
 import Settings from "./pages/app/settings";
 
+import CodeIntelligence from "./pages/app/code-intelligence";
+import AgentNetwork from "./pages/app/agent-network";
+
 import AppLayout from "./layouts/applayout";
 
 import "./App.css";
@@ -36,7 +39,6 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* PUBLIC WEBSITE */}
         <Route
           path="/"
@@ -85,9 +87,13 @@ function App() {
           <Route path="workspace" element={<Workspace />} />
           <Route path="discoveries" element={<Discoveries />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="agent-network" element={<AgentNetwork />} />
+          <Route
+            path="code-intelligence"
+            element={<CodeIntelligence />}
+          />
           <Route path="settings" element={<Settings />} />
         </Route>
-
       </Routes>
     </BrowserRouter>
   );
