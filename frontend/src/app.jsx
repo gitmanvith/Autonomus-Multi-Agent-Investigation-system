@@ -1,5 +1,4 @@
-
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Navbar from "./components/navbar";
 import Footer from "./components/footer";
@@ -12,14 +11,15 @@ import Features from "./pages/features";
 import Login from "./pages/login";
 import Signup from "./pages/signup";
 
-import Explore from "./pages/app/explore";
 import Workspace from "./pages/app/workspace";
+import Explore from "./pages/app/explore";
+import AgenticNetwork from "./pages/app/network";
+import FunnelAnalysis from "./pages/app/funnels";
+import ChallengeSolver from "./pages/app/challenge";
 import Discoveries from "./pages/app/discoveries";
 import Reports from "./pages/app/reports";
+import Debug from "./pages/app/debug";
 import Settings from "./pages/app/settings";
-
-import CodeIntelligence from "./pages/app/code-intelligence";
-import AgentNetwork from "./pages/app/agent-network";
 
 import AppLayout from "./layouts/applayout";
 
@@ -39,7 +39,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* PUBLIC WEBSITE */}
+        {/* PUBLIC MARKETING & AUTH PAGES */}
         <Route
           path="/"
           element={
@@ -48,7 +48,6 @@ function App() {
             </PublicLayout>
           }
         />
-
         <Route
           path="/about"
           element={
@@ -57,7 +56,6 @@ function App() {
             </PublicLayout>
           }
         />
-
         <Route
           path="/how-it-works"
           element={
@@ -66,7 +64,6 @@ function App() {
             </PublicLayout>
           }
         />
-
         <Route
           path="/features"
           element={
@@ -75,25 +72,25 @@ function App() {
             </PublicLayout>
           }
         />
-
-        {/* AUTHENTICATION */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
-        {/* INVESTIGATION APPLICATION */}
+        {/* AUTONOMOUS INVESTIGATION APPLICATION DASHBOARD */}
         <Route path="/app" element={<AppLayout />}>
-          <Route index element={<Explore />} />
-          <Route path="explore" element={<Explore />} />
+          <Route index element={<Workspace />} />
           <Route path="workspace" element={<Workspace />} />
+          <Route path="explore" element={<Explore />} />
+          <Route path="network" element={<AgenticNetwork />} />
+          <Route path="funnels" element={<FunnelAnalysis />} />
+          <Route path="challenge" element={<ChallengeSolver />} />
           <Route path="discoveries" element={<Discoveries />} />
           <Route path="reports" element={<Reports />} />
-          <Route path="agent-network" element={<AgentNetwork />} />
-          <Route
-            path="code-intelligence"
-            element={<CodeIntelligence />}
-          />
+          <Route path="debug" element={<Debug />} />
           <Route path="settings" element={<Settings />} />
         </Route>
+
+        {/* Catch-all redirect */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

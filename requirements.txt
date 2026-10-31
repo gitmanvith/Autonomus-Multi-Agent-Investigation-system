@@ -5,14 +5,14 @@
 langchain>=1.0,<2.0
 langchain-core>=1.0,<2.0
 langchain-text-splitters>=1.0
-langchain-openai>=1.0
+langchain-ollama>=1.0
 
 # Multi-Agent Orchestration
 langgraph>=1.0,<2.0
 langgraph-checkpoint-sqlite
 
-# OpenAI API
-openai>=2.0
+# Ollama (local LLM)
+ollama>=0.6.0
 
 # Tavily Search
 langchain-tavily
